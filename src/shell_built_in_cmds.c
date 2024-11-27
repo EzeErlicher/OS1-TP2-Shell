@@ -1,4 +1,3 @@
-
 #include "shell_built_in_cmds.h"
 #include <pwd.h>
 #include <stdio.h>
@@ -14,10 +13,18 @@ void get_prompt(char* prompt, size_t size)
     const char* user = pw->pw_name;
 
     char hostname[BUFFER_SIZE / 4];
-    gethostname(hostname, sizeof(hostname));
+    if (gethostname(hostname, sizeof(hostname)) == -1)
+    {
+        perror("Error getting hostname");
+        return;
+    }
 
     char cwd[BUFFER_SIZE];
-    getcwd(cwd, sizeof(cwd));
+    if (getcwd(cwd, sizeof(cwd)) == NULL)
+    {
+        perror("Error getting current working directory");
+        return;
+    }
 
     snprintf(prompt, size, "%s@%s:%s$ ", user, hostname, cwd);
 }
@@ -25,7 +32,11 @@ void get_prompt(char* prompt, size_t size)
 void change_directory(char* path)
 {
     char current_dir[BUFFER_SIZE];
-    getcwd(current_dir, sizeof(current_dir));
+    if (getcwd(current_dir, sizeof(current_dir)) == NULL)
+    {
+        perror("Error getting current working directory");
+        return;
+    }
 
     if (path == NULL || strcmp(path, "") == 0)
     {
@@ -37,7 +48,11 @@ void change_directory(char* path)
         char* oldpwd = getenv("OLDPWD");
         if (oldpwd)
         {
-            chdir(oldpwd);
+            if (chdir(oldpwd) == -1)
+            {
+                perror("Error changing directory to OLDPWD");
+                return;
+            }
             printf("%s\n", oldpwd);
             return;
         }
@@ -52,7 +67,11 @@ void change_directory(char* path)
     {
         setenv("OLDPWD", current_dir, 1);
         char new_dir[BUFFER_SIZE];
-        getcwd(new_dir, sizeof(new_dir));
+        if (getcwd(new_dir, sizeof(new_dir)) == NULL)
+        {
+            perror("Error getting new working directory");
+            return;
+        }
         setenv("PWD", new_dir, 1);
     }
     else
@@ -63,5 +82,6 @@ void change_directory(char* path)
 
 void clear_screen()
 {
-    printf("\033[H\033[J"); // Escape sequence para limpiar la pantalla
+    // Ignore the return value of the escape sequence
+    (void)printf("\033[H\033[J"); // Escape sequence to clear screen
 }

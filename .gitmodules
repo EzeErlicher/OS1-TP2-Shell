@@ -1,0 +1,3 @@
+[submodule "OS1-TP1-Monitoring-Programm"]
+	path = OS1-TP1-Monitoring-Programm
+	url = https://github.com/EzeErlicher/OS1-TP1-Monitoring-Programm.git

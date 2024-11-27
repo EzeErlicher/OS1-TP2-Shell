@@ -1,10 +1,8 @@
-name: CI Workflow
+name: QA Workflow
 
 on:
   workflow_dispatch:
   pull_request:
-    branches:
-      - master  # Trigger on pull requests targeting master
     types: [synchronize, opened, reopened, ready_for_review]
 
 jobs:
@@ -15,39 +13,40 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          submodules: recursive
+          submodules: 'recursive'  # Ensures submodules are cloned and initialized
 
-      # Install dependencies required for both projects
-      - name: Install system dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y cmake gcc g++ libmicrohttpd-dev doxygen gcovr lcov cppcheck graphviz clang-format valgrind bc
+      - name: Install dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: doxygen gcovr lcov cppcheck graphviz clang-format valgrind bc
+          version: 1.0
 
-      # Install Conan
+      - name: Run style check
+        uses: ./.github/actions/style
+
+      - name: Run documentation check
+        uses: ./.github/actions/documentation
+
       - name: Install Conan
         run: |
-          sudo apt install -y python3-pip
-          pip3 install conan
+          python3 -m pip install --upgrade pip
+          python3 -m pip install conan
 
-      # Set up Conan profile
-      - name: Set up Conan profile
+      - name: Install dependencies
         run: |
-          conan profile detect || echo "Default profile already exists."
+          sudo apt update
+          sudo apt install -y cmake gcc g++ libmicrohttpd-dev
 
-      # Install dependencies with Conan
-      - name: Install cJSON and Unity with Conan
-        run: |
-          conan remote add conancenter https://center.conan.io || echo "Remote 'conancenter' already exists."
-          conan install . --build=missing -g CMakeDeps -g CMakeToolchain
-
-      # Clone prometheus-client-c and install libraries
       - name: Clone prometheus-client-c repository
         run: |
           git clone https://github.com/digitalocean/prometheus-client-c.git
+          cd prometheus-client-c
+          git submodule update --init --recursive  # Ensure submodules are initialized
 
       - name: Fix incompatible function pointer in promhttp.c
         run: |
-          sed -i 's/&promhttp_handler/(MHD_AccessHandlerCallback)promhttp_handler/' prometheus-client-c/promhttp/src/promhttp.c
+          cd prometheus-client-c
+          sed -i 's/&promhttp_handler/(MHD_AccessHandlerCallback)promhttp_handler/' promhttp/src/promhttp.c
 
       - name: Build prom library
         run: |
@@ -65,22 +64,21 @@ jobs:
           make
           sudo make install
 
-      # Build both shell and monitoring_programm
-      - name: Build projects
+      - name: Create default Conan profile
+        run: |
+          conan profile detect
+      
+      - name: Modify default Conan profile
+        run: |
+          echo "compiler.libcxx=libstdc++11" >> /home/runner/.conan2/profiles/default
+      
+      - name: Build project
         run: |
           mkdir -p build
           cd build
-          cmake -DCMAKE_TOOLCHAIN_FILE=../conan_toolchain.cmake ..
-
-      # QA steps: style check
-      - name: Run style check
-        uses: ./.github/actions/style
-
-      # QA steps: documentation check
-      - name: Run documentation check
-        uses: ./.github/actions/documentation
-
-      # QA steps: run tests and coverage
+          conan install .. -of .
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release
+          make
+      
       - name: Run tests and coverage
         uses: ./.github/actions/coverage_and_test
-

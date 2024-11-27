@@ -21,7 +21,7 @@ void start_monitor()
     if ((monitor_pid = fork()) == 0)
     {
         // proceso hijo
-        execl("./monitoring_programm_directory/monitoring_programm", "monitor", "../config.json", NULL);
+        execl("../OS1-TP1-Monitoring-Programm/build/monitoring_programm", "monitor", "../config.json", NULL);
         perror("Error starting monitor");
         exit(EXIT_FAILURE);
     }

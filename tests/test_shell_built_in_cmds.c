@@ -26,10 +26,16 @@ void test_get_prompt(void)
     const char* user = pw->pw_name;
 
     char hostname[256];
-    gethostname(hostname, sizeof(hostname));
+    if (gethostname(hostname, sizeof(hostname)) == -1)
+    {
+        perror("Error getting hostname");
+    }
 
     char cwd[1024];
-    getcwd(cwd, sizeof(cwd));
+    if (getcwd(cwd, sizeof(cwd)) == NULL)
+    {
+        perror("Error getting current working directory");
+    }
 
     char expected_prompt[2048];
     snprintf(expected_prompt, sizeof(expected_prompt), "%s@%s:%s$ ", user, hostname, cwd);
@@ -46,7 +52,10 @@ void test_change_directory_to_home(void)
     change_directory(home_dir);
 
     char cwd[1024];
-    getcwd(cwd, sizeof(cwd));
+    if (getcwd(cwd, sizeof(cwd)) == NULL)
+    {
+        perror("Error getting current working directory");
+    }
     TEST_ASSERT_EQUAL_STRING(home_dir, cwd);
 }
 
@@ -57,7 +66,10 @@ void test_change_directory_invalid_path(void)
 
     // Test if the current directory remains unchanged (stays at previous directory)
     char cwd[1024];
-    getcwd(cwd, sizeof(cwd));
+    if (getcwd(cwd, sizeof(cwd)) == NULL)
+    {
+        perror("Error getting current working directory");
+    }
     char* expected_dir = getenv("PWD");
     TEST_ASSERT_EQUAL_STRING(expected_dir, cwd);
 }
@@ -66,7 +78,10 @@ void test_change_directory_invalid_path(void)
 void test_change_directory_to_oldpwd(void)
 {
     char original_dir[1024];
-    getcwd(original_dir, sizeof(original_dir));
+    if (getcwd(original_dir, sizeof(original_dir)) == NULL)
+    {
+        perror("Error getting current working directory");
+    }
 
     // Change to home and then back to original
     change_directory(getenv("HOME"));
@@ -74,7 +89,10 @@ void test_change_directory_to_oldpwd(void)
     change_directory("-");
 
     char cwd[1024];
-    getcwd(cwd, sizeof(cwd));
+    if (getcwd(cwd, sizeof(cwd)) == NULL)
+    {
+        perror("Error getting current working directory");
+    }
     TEST_ASSERT_EQUAL_STRING(original_dir, cwd);
 }
 
@@ -92,12 +110,18 @@ void test_clear_screen(void)
 
     // Read and check content for ANSI clear screen sequence
     char buffer[16];
-    fread(buffer, sizeof(char), 16, fp);
+    if (fread(buffer, sizeof(char), 16, fp) == 0)
+    {
+        perror("Error reading from file");
+    }
     TEST_ASSERT_EQUAL_STRING("\033[H\033[J", buffer);
 
     // Close and reset stdout
     fclose(fp);
-    freopen("/dev/tty", "w", stdout);
+    if (freopen("/dev/tty", "w", stdout) == NULL)
+    {
+        perror("Failed to reset stdout");
+    }
 }
 
 // Main function to run all tests
