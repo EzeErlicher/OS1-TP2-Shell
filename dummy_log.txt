@@ -1,0 +1,7 @@
+# test log 
+error: failed to connect to server
+error: invalid input
+error: failed to connect to server
+error: network timeout
+error: out of bounds
+error: out of bounds

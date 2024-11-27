@@ -1,0 +1,69 @@
+        -:    0:Source:src/shell_built_in_cmds.c
+        -:    0:Graph:test_shell-shell_built_in_cmds.gcno
+        -:    0:Data:test_shell-shell_built_in_cmds.gcda
+        -:    0:Runs:1
+        -:    1:
+        -:    2:#include "shell_built_in_cmds.h"
+        -:    3:#include <pwd.h>
+        -:    4:#include <stdio.h>
+        -:    5:#include <stdlib.h>
+        -:    6:#include <unistd.h>
+        -:    7:#include <string.h>
+        -:    8:
+        1:    9:void get_prompt(char* prompt, size_t size)
+        -:   10:{
+        1:   11:    struct passwd* pw = getpwuid(getuid());
+        1:   12:    const char* user = pw->pw_name;
+        -:   13:
+        -:   14:    char hostname[256];
+        1:   15:    gethostname(hostname, sizeof(hostname));
+        -:   16:
+        -:   17:    char cwd[1024];
+        1:   18:    getcwd(cwd, sizeof(cwd));
+        -:   19:
+        1:   20:    snprintf(prompt, size, "%s@%s:%s$ ", user, hostname, cwd);
+        1:   21:}
+        -:   22:
+        4:   23:void change_directory(char* path)
+        -:   24:{
+        -:   25:    char current_dir[1024];
+        4:   26:    getcwd(current_dir, sizeof(current_dir));
+        -:   27:
+        4:   28:    if (path == NULL || strcmp(path, "") == 0)
+        -:   29:    {
+    #####:   30:        printf("Error: No se especificó un directorio.\n");
+       1*:   31:        return;
+        -:   32:    }
+        4:   33:    else if (strcmp(path, "-") == 0)
+        -:   34:    {
+        1:   35:        char* oldpwd = getenv("OLDPWD");
+        1:   36:        if (oldpwd)
+        -:   37:        {
+        1:   38:            chdir(oldpwd);
+        1:   39:            printf("%s\n", oldpwd);
+        1:   40:            return;
+        -:   41:        }
+        -:   42:        else
+        -:   43:        {
+    #####:   44:            printf("Error: OLDPWD no está definido.\n");
+    #####:   45:            return;
+        -:   46:        }
+        -:   47:    }
+        -:   48:
+        3:   49:    if (chdir(path) == 0)
+        -:   50:    {
+        2:   51:        setenv("OLDPWD", current_dir, 1);
+        -:   52:        char new_dir[1024];
+        2:   53:        getcwd(new_dir, sizeof(new_dir));
+        2:   54:        setenv("PWD", new_dir, 1);
+        -:   55:    }
+        -:   56:    else
+        -:   57:    {
+        1:   58:        perror("Error al cambiar de directorio");
+        -:   59:    }
+        -:   60:}
+        -:   61:
+        1:   62:void clear_screen()
+        -:   63:{
+        1:   64:    printf("\033[H\033[J"); // Escape sequence para limpiar la pantalla
+        1:   65:}

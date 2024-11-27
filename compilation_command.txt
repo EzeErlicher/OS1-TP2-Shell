@@ -1,0 +1,4 @@
+#shell compilation command
+gcc src/shell.c src/monitor_cmds.c src/execute_cmds.c src/shell_built_in_cmds.c -I include -o shell
+#test_shell copilation command
+gcc -I./tests/src -I include ./tests/test_shell_built_in_cmds.c ./src/shell_built_in_cmds.c ./tests/unity.c -fprofile-arcs -ftest-coverage -o test_shell

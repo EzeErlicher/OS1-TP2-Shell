@@ -1,0 +1,10 @@
+{
+    "metrics": {
+        "cpu": true,
+        "memory": true,
+        "context_switches": false,
+        "running_processes": false,
+        "reads_writes": false,
+        "rx_tx_packets": true
+    }
+}

@@ -1,0 +1,86 @@
+name: CI Workflow
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - master  # Trigger on pull requests targeting master
+    types: [synchronize, opened, reopened, ready_for_review]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      # Install dependencies required for both projects
+      - name: Install system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y cmake gcc g++ libmicrohttpd-dev doxygen gcovr lcov cppcheck graphviz clang-format valgrind bc
+
+      # Install Conan
+      - name: Install Conan
+        run: |
+          sudo apt install -y python3-pip
+          pip3 install conan
+
+      # Set up Conan profile
+      - name: Set up Conan profile
+        run: |
+          conan profile detect || echo "Default profile already exists."
+
+      # Install dependencies with Conan
+      - name: Install cJSON and Unity with Conan
+        run: |
+          conan remote add conancenter https://center.conan.io || echo "Remote 'conancenter' already exists."
+          conan install . --build=missing -g CMakeDeps -g CMakeToolchain
+
+      # Clone prometheus-client-c and install libraries
+      - name: Clone prometheus-client-c repository
+        run: |
+          git clone https://github.com/digitalocean/prometheus-client-c.git
+
+      - name: Fix incompatible function pointer in promhttp.c
+        run: |
+          sed -i 's/&promhttp_handler/(MHD_AccessHandlerCallback)promhttp_handler/' prometheus-client-c/promhttp/src/promhttp.c
+
+      - name: Build prom library
+        run: |
+          mkdir -p prometheus-client-c/buildprom
+          cd prometheus-client-c/buildprom
+          cmake ../prom
+          make
+          sudo make install
+
+      - name: Build promhttp library
+        run: |
+          mkdir -p prometheus-client-c/buildpromhttp
+          cd prometheus-client-c/buildpromhttp
+          cmake ../promhttp
+          make
+          sudo make install
+
+      # Build both shell and monitoring_programm
+      - name: Build projects
+        run: |
+          mkdir -p build
+          cd build
+          cmake -DCMAKE_TOOLCHAIN_FILE=../conan_toolchain.cmake ..
+
+      # QA steps: style check
+      - name: Run style check
+        uses: ./.github/actions/style
+
+      # QA steps: documentation check
+      - name: Run documentation check
+        uses: ./.github/actions/documentation
+
+      # QA steps: run tests and coverage
+      - name: Run tests and coverage
+        uses: ./.github/actions/coverage_and_test
+
