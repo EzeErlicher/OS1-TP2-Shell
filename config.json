@@ -5,6 +5,7 @@
         "context_switches": false,
         "running_processes": false,
         "reads_writes": false,
-        "rx_tx_packets": true
+        "rx_tx_packets": true,
+        "fragmentation": true
     }
 }

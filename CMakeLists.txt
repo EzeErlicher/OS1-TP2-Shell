@@ -6,6 +6,9 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type (default Debug)" FORCE)
 endif()
 
+# Option to enable code coverage
+option(COVERAGE "Enable coverage reporting" ON)
+
 # Set CMake to output files in the build directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
@@ -40,11 +43,15 @@ set_target_properties(test_shell PROPERTIES
 # Find Unity dependency from Conan
 find_package(unity REQUIRED)
 
-# Link Unity library and gcov to the test executable
-target_link_libraries(test_shell unity::unity gcov)
+# Apply coverage flags and link gcov if COVERAGE is enabled
+if(COVERAGE)
+    message(STATUS "Code coverage enabled")
+    target_compile_options(test_shell PRIVATE --coverage)
+    target_link_libraries(test_shell PRIVATE gcov)
+endif()
 
-# Enable code coverage flags for tests
-target_compile_options(test_shell PRIVATE -fprofile-arcs -ftest-coverage)
+# Link Unity library to the test executable
+target_link_libraries(test_shell PRIVATE unity::unity)
 
 # Register the test executable with CTest
 add_test(NAME test_shell COMMAND ${CMAKE_BINARY_DIR}/tests/test_shell)
