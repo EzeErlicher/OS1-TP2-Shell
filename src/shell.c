@@ -84,9 +84,7 @@ int main(int argc, char* argv[]) {
         } else if (strcmp(command, "status_monitor") == 0) {
             status_monitor();
         } else if (strncmp(command, "explore_config ", 15) == 0) {
-            // Extract the directory from the command and call the explore function
             explore_config_files(command + 15);
-            printf("I'M in");
         } else {
             execute_command(command, background);
         }
